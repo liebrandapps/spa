@@ -5,5 +5,5 @@ visualapproach/WiFi-remote-for-Bestway-Lay-Z-SPA.git
 
 Just run "./addAlexa.sh" at the command prompt
 
-The patched code is located in "PATCHED-Wifi-remote".
+The patched code is located in "WiFi-remote-for-Bestway-Lay-Z-SPA".
 
