@@ -1,0 +1,64 @@
+2a3,10
+> /* START CODE Alexa Integration */
+> #include "fauxmoESP.h"
+> fauxmoESP fauxmo;
+> unsigned char devIdWhirlpool;
+> unsigned char devIdHeizung;
+> unsigned char devIdTemperatur;
+> /* END CODE Alexa Integration */
+>
+57a66
+>
+90a100,146
+>
+>     /* START CODE Alexa Integration */
+>     Serial.print("[ALEXA] Adding devices for Alexa\n");
+>     const char * devWhirlpool = "Whirlpool";
+>     const char * devHeizung = "Heizung";
+>     const char * devTemperatur = "Temperatur";
+>     devIdWhirlpool = fauxmo.addDevice(devWhirlpool);
+>     devIdHeizung = fauxmo.addDevice(devHeizung);
+>     devIdTemperatur = fauxmo.addDevice(devTemperatur);
+>     fauxmo.setPort(80); // required for gen3 devices
+>     fauxmo.enable(true);
+>
+>
+>     fauxmo.onSetState([](unsigned char device_id, const char * device_name, bool state, unsigned char value) {
+>         Serial.printf("[MAIN] Device #%d (%s) state: %s value: %d\n", device_id, device_name, state ? "ON" : "OFF", value);
+>         int64_t val=0;
+>         command_que_item item;
+>         item.xtime = 0;
+>         item.interval = 0;
+>         item.text = "";
+>
+>         if(device_id == devIdWhirlpool) {
+>             val = state ? 1 : 0;
+>             Serial.printf("[ALEXA] Command bubbles %s\n", val==1? "ON" : "OFF");
+>             item.cmd = SETBUBBLES;
+>             item.val = val;
+>             bwc.add_command(item);
+>         }
+>         if(device_id == devIdHeizung) {
+>             val = state ? 1 : 0;
+>             Serial.printf("[ALEXA] Command Heater %s\n", val==1? "ON" : "OFF");
+>             item.cmd = SETHEATER;
+>             item.val = val;
+>             bwc.add_command(item);
+>         }
+>         if(device_id == devIdTemperatur) {
+>             /* Need to convert 0-255 back into original value*/
+>             value = value * 100 / 255;
+>             Serial.printf("[ALEXA] Set temperature to %d\n", (int)value);
+>             item.cmd = SETTARGET;
+>             item.val = value;
+>             bwc.add_command(item);
+>         }
+>
+>     });
+>     /* END CODE Alexa Integration */
+>
+128a185,188
+>
+>         /* START CODE Alexa Integration */
+>         fauxmo.handle();
+>         /* END CODE Alexa Integration */
