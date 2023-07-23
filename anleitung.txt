@@ -1,0 +1,86 @@
+
+
+Holen der Dateien aus github:
+
+git clone https://github.com/vintlabs/fauxmoESP.git
+git clone https://github.com/visualapproach/WiFi-remote-for-Bestway-Lay-Z-SPA.git
+
+Editieren:
+
+1. Visual Studio Code herunterladen und installieren
+2. Unter „Erweiterungen“ (Extensions) PlatformIO auswählen und installieren
+3. Aus PlatformIO heraus unter WiFi-remote … den Ordner „code“ öffnen.
+
+
+Folgende Schritte sind auszuführen, um das Original-Projekt mit der Alexa-Funktionalität zu erweitern:
+
+1. Im Ordner „lib“ einen neuen Ordner „fauxmoESP“ anlegen
+2. In diesen neuen Ordner die 3 Dateien fauxmoESP.cpp, fauxmoESP.h und templates.h ablegen
+3. Datei fauxmESP.cpp, Zeile 30: beim #include die Anführungszeichen durch < und > ersetzen: „#include <fauxmoESP.h>
+4. Datei fauxmESP.h, Zeile 75: beim #include die Anführungszeichen durch < und > ersetzen: „#include <templates.h>
+5. Datei „main.h“, Zeile 53: Den Port des Webservers von 80 auf 82 legen: ESP8266WebServer server(82);
+6. Datei „main.cpp“, ab Zeile 3 folgenden Code einfügen:
+
+/* START CODE Alexa Integration */
+#include "fauxmoESP.h"
+fauxmoESP fauxmo;
+unsigned char devIdWhirlpool;
+unsigned char devIdHeizung;
+unsigned char devIdTemperatur;
+/* END CODE Alexa Integration */
+
+7. Datei „main.cpp“, ungefähr ab Zeile 101 (nach der Zeile bwc.loadCommandQueue()) folgenden Code einfügen:
+
+/* START CODE Alexa Integration */
+    Serial.print("[ALEXA] Adding devices for Alexa\n");
+    const char * devWhirlpool = "Whirlpool";
+    const char * devHeizung = "Heizung";
+    const char * devTemperatur = "Temperatur";
+    devIdWhirlpool = fauxmo.addDevice(devWhirlpool);
+    devIdHeizung = fauxmo.addDevice(devHeizung);
+    devIdTemperatur = fauxmo.addDevice(devTemperatur);
+    fauxmo.setPort(80); // required for gen3 devices
+    fauxmo.enable(true);
+
+
+    fauxmo.onSetState([](unsigned char device_id, const char * device_name, bool state, unsigned char value) {
+        Serial.printf("[MAIN] Device #%d (%s) state: %s value: %d\n", device_id, device_name, state ? "ON" : "OFF", value);
+        int64_t val=0;
+        command_que_item item;
+        item.xtime = 0;
+        item.interval = 0;
+        item.text = "";
+
+        if(device_id == devIdWhirlpool) {
+            val = state ? 1 : 0;
+            Serial.printf("[ALEXA] Command bubbles %s\n", val==1? "ON" : "OFF");
+            item.cmd = SETBUBBLES;
+            item.val = val;
+            bwc.add_command(item);
+        }
+        if(device_id == devIdHeizung) {
+            val = state ? 1 : 0;
+            Serial.printf("[ALEXA] Command Heater %s\n", val==1? "ON" : "OFF");
+            item.cmd = SETHEATER;
+            item.val = val;
+            bwc.add_command(item);
+        }
+        if(device_id == devIdTemperatur) {
+            /* Need to convert 0-255 back into original value*/
+            value = value * 100 / 255;
+            Serial.printf("[ALEXA] Set temperature to %d\n", (int)value);
+            item.cmd = SETTARGET;
+            item.val = value;
+            bwc.add_command(item);
+        }
+
+    });
+    /* END CODE Alexa Integration */
+
+8. Datei main.cpp, ungefähr ab Zeile 186 (oberhalb des Kommentars //web socket“), folgenden Code einfügen:
+
+   /* START CODE Alexa Integration */
+        fauxmo.handle();
+   /* END CODE Alexa Integration */
+
+
